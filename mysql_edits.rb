@@ -15,7 +15,7 @@ results = client.query("SELECT id, firstname, lastname, email FROM #{table_name}
 # Display the results
 puts "First 10 records (id, firstname, lastname, email):"
 results.each do |row|
-  puts "#{row['id']}, #{row['firstname']}, #{row['lastname']}, #{row['email']}"
+  puts "#{row['id']}, #{row['firstname']}, #{row['lastname']}, #{row['email2']}"
 end
 
 # Step 3: Find and display the count of people with the profession "doctor"
@@ -23,7 +23,13 @@ doctor_count = client.query("SELECT COUNT(*) as count FROM #{table_name} WHERE p
 puts "Number of people with the profession 'doctor': #{doctor_count.first['count']}"
 
 # Step 4: Update the email2 column to change the email from "@gmail.com" to "@hotmail.com" for all people with the profession "Ecologist"
-client.query("UPDATE #{table_name} SET email2 = REPLACE(email, '@gmail.com', '@hotmail.com') WHERE profession = 'Ecologist'")
+#
+
+
+
+client.query("UPDATE #{table_name} SET email2 = REPLACE(email2, '@yopmail.com', '@hotmail.com') WHERE profession = 'Ecologist'")
+
+
 
 # Step 5: Close the database connection
 client.close

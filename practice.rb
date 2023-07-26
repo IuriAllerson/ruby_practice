@@ -8,5 +8,5 @@ client = Mysql2::Client.new(
 
 client.close
 
-DB09_LGN=loki
-DB09_PWD=v4WmZip2K67J6Iq7NXC
+
+
