@@ -21,43 +21,44 @@ def get_subject_teachers(subject_id, client)
   if results.count.zero?
     puts "No one teaches the subject with ID #{subject_id}."
   else
-    string = ""
+
+    string = "Subject: #{results[0]['name']}\nTeachers:\n"
 
     results.each do |row|
-      string += "Subject: #{row['name']}\nTeachers:\n#{row['first_name']} #{row['middle_name']} #{row['last_name']}\n"
+      string += "#{row['first_name']} #{row['middle_name']} #{row['last_name']}\n"
     end
 
     puts string
+
   end
 end
 
 #2
 
-def get_class_subjects(subject_name, client)
-  q = "SELECT c.name AS class_name, s.name AS subject_name, t.first_name, t.middle_name, t.last_name
+def get_class_subjects(class_name, client)
+  q = "SELECT DISTINCT s.name AS subject_name, t.first_name, t.middle_name, t.last_name
   FROM classes_iuri AS c
   JOIN teachers_classes_iuri AS tc
     ON tc.class_id = c.id
   JOIN teachers_iuri AS t
     ON t.id = tc.teacher_id
   JOIN subjects_iuri AS s
-    ON s.id = t.subject_id WHERE s.name = \"#{subject_name}\""
+    ON s.id = t.subject_id WHERE c.name = \"#{class_name}\""
 
   results = client.query(q).to_a
 
   if results.count.zero?
     puts "There is no teacher teaching #{subject_name}."
   else
-    string = "Subject: #{results[0]['subject_name']}\n"
+    string = ""
 
     results.each do |row|
-      string += "Classes: #{row['class_name']} (#{row['first_name']} #{row['middle_name']} #{row['last_name']})\n"
+      string += "#{row['subject_name']} (#{row['first_name']} #{row['middle_name']} #{row['last_name']})\n"
     end
 
     puts string
   end
 end
-
 #3
 
 def get_teachers_list_by_letter(letter, client)
@@ -75,13 +76,15 @@ def get_teachers_list_by_letter(letter, client)
   if results.count.zero?
     puts "There are no teachers whose first name or last name contains the letter \"#{letter}\""
   else
-    string = ""
+
+    string = "Subject: #{results[0]['name']}\nTeachers:\n"
 
     results.each do |row|
-      string += "#{row['first_name'][0] + '.'} #{row['middle_name'][0] + '.'} #{row['last_name']} (#{row['subject_name']})\n"
+      string += "#{row['first_name']} #{row['middle_name']} #{row['last_name']}\n"
     end
 
     puts string
+
   end
 end
 
@@ -158,5 +161,68 @@ def get_teachers_by_year(year, client)
     end
 
     puts string.gsub(/,$/, '.')
+  end
+end
+
+
+def random_date(begin_date, end_date)
+  begin_date = Date.parse(begin_date)
+  end_date = Date.parse(end_date)
+
+  random_date = rand(begin_date..end_date)
+
+  random_date
+end
+
+def random_last_names(n, client)
+  q = <<~SQL
+    SELECT * FROM last_names
+  SQL
+
+  results = client.query(q).to_a
+
+  results.map { |row| row['last_name'] }
+end
+
+def random_first_names(n, client)
+  q = <<~SQL
+    SELECT names FROM female_names
+    UNION
+    SELECT FirstName FROM male_names
+  SQL
+
+  results = client.query(q).to_a
+
+  results.map { |row| row['names'] }
+end
+
+def random_people(n, client)
+create_table  = <<~SQL
+    CREATE TABLE IF NOT EXISTS random_people_iuri (
+      id BIGINT(20) PRIMARY KEY AUTO_INCREMENT,
+      first_name VARCHAR(30),
+      last_name VARCHAR(30),
+      birth_date DATE
+    );
+  SQL
+
+  client.query(create_table)
+
+  first_names = random_first_names(n, client)
+  last_names = random_last_names(n, client)
+  birth_dates = []
+
+  n.times do
+    birth_dates << random_date("1923-01-01", "2023-01-01").to_s
+  end
+
+  people = first_names.zip(last_names).zip(birth_dates).map(&:flatten)
+
+  people.each_slice(10000) do |group|
+    insert = "INSERT INTO random_people_iuri (first_name, last_name, birth_date) VALUES "
+    group.each do |row|
+      insert += "(\"#{row[0]}\", \"#{row[1]}\", \"#{row[2]}\"),"
+    end
+    client.query(insert.chop!)
   end
 end
