@@ -226,3 +226,53 @@ create_table  = <<~SQL
     client.query(insert.chop!)
   end
 end
+
+def clean_school_districts(client)
+  create_table = <<~SQL
+    CREATE TABLE IF NOT EXISTS montana_public_district_report_card__uniq_dist_iuri (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    clean_name VARCHAR(255),
+    address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip VARCHAR(10),
+    UNIQUE (name, clean_name, address, city, state, zip)
+    );
+  SQL
+
+  client.query(create_table)
+
+  insert_data = <<~SQL
+    INSERT IGNORE INTO montana_public_district_report_card__uniq_dist_iuri (name, address, city, state, zip)
+    SELECT DISTINCT school_name, address, city, state, zip
+    FROM montana_public_district_report_card;
+  SQL
+
+  client.query(insert_data)
+
+  retrieve_names = <<~SQL
+    SELECT name FROM montana_public_district_report_card__uniq_dist_iuri
+    WHERE clean_name IS NULL;
+  SQL
+
+  names = client.query(retrieve_names).to_a
+
+  names.map do |element|
+    clean_name = element['name']
+                   .gsub(/\bElem\b|\bEl\b/, "Elementary School")
+                   .gsub(/H S|\bHS\b/, "High School")
+                   .gsub(/K-12|K-12 Schools/, "Public School")
+                   .gsub(/Schls|Schools/, "School")
+                   .gsub(/\b(\w+)(\s(\1\b))+/, '\1')
+                   .gsub(/School (\w+) (School)/, '\1 \2') + " District"
+
+    insert_clean_name = <<~SQL
+      UPDATE montana_public_district_report_card__uniq_dist_iuri
+      SET clean_name = '#{clean_name}'
+      WHERE name = '#{element['name']}'
+    SQL
+
+    client.query(insert_clean_name)
+  end
+end
