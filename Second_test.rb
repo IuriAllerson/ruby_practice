@@ -50,6 +50,11 @@ def clean_names(client)
       last_part = $2.split.map(&:capitalize).join(' ')
       before_last_part = $1.downcase.gsub('/', '').strip
       "#{last_part} #{before_last_part}"
+        .gsub(/\b(\w+)\b\s+\1\b/i, '\1')
+        .gsub(/,\s+([^\/,]+(?=(\/|$)))/, ' (\1)')
+
+        .gsub(/\((.*?)\)/) do |match|
+        match.gsub(/\w+/, &:capitalize)
     end
                    .gsub(/\bTwp\b/i, 'Township')
                    .gsub(/\bHwy\b/i, 'Highway')
