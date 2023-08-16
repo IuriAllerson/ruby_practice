@@ -44,17 +44,19 @@ def clean_names(client)
   names = client.query(retrieve_data).to_a
 
   names.each do |name|
-    clean_name = name['candidate_office_name']
-                   .gsub(/\bCounty Clerk\/Recorder\/DeKalb County\b/, 'DeKalb County clerk and recorder')
-                   .gsub(/(.*)\/(.+)/) do
-      last_part = $2.split.map(&:capitalize).join(' ')
-      before_last_part = $1.downcase.gsub('/', '').strip
-      "#{last_part} #{before_last_part}"
-        .gsub(/\b(\w+)\b\s+\1\b/i, '\1')
-        .gsub(/,\s+([^\/,]+(?=(\/|$)))/, ' (\1)')
+    name = row['candidate_office_name']
+    up_candidate = name.downcase
+                       .gsub(/\bCounty Clerk\/Recorder\/DeKalb County\b/i, "DeKalb County clerk and recorder")
+                       .gsub(/\bTwp\b/i, "Township")
+                       .gsub(/\bHwy\b|\bhighway\b/i, "Highway")
+                       .gsub(/\.$/, '')
+                       .gsub(/(.+)\/(.+)/) { |match| "#{$2.capitalize} #{$1.capitalize}" }
+                     .gsub(/\//) { |match| '' }
+                     .gsub(/(\w+),\s*(.*)/){ "#{$1} (#{$2.split.map(&:capitalize).join(' ')})" }
+                     .gsub(/\,/, '')
+                     .gsub(/\b(\w+)\b(?=.*\b\1\b)/i, '')
+                     .strip.gsub(/\s+/, ' ')
 
-        .gsub(/\((.*?)\)/) do |match|
-        match.gsub(/\w+/, &:capitalize)
     end
                    .gsub(/\bTwp\b/i, 'Township')
                    .gsub(/\bHwy\b/i, 'Highway')
